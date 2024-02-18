@@ -30,14 +30,14 @@ async def get_distance(origin, destination):
     try:
         location1 = geolocator.geocode(origin)
         location2 = geolocator.geocode(destination)
-        
+
         if location1 is None or location2 is None:
             print("Eine oder beide Adressen konnten nicht gefunden werden.")
             return None
-        
+
         coords1 = (location1.latitude, location1.longitude)
         coords2 = (location2.latitude, location2.longitude)
-        
+
         distance = geodesic(coords1, coords2).kilometers
         return distance
     except Exception as e:
@@ -65,17 +65,17 @@ async def process_order(driver, order_element):
             "fahrer_nachname": driver_surname,
 
         }
-        
+
 
         async with ClientSession() as session:
-            
+
             response = await send_data_via_webhook(session, order_data)
             print("Webhook Response:", response)
             print(order_data)
             await asyncio.gather(timerx(driver))
-        
 
-        
+
+
     except Exception as e:
         print(f"")
 
@@ -91,15 +91,17 @@ async def main():
     profile_path = "C:\\Users\\alaad\\AppData\\Local\\Google\\Chrome\\User Data"
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
-    #options.add_argument("--disable-headless-mode")
+    # options.add_argument("--disable-headless-mode")
 
     options.add_argument("--no-sandbox")
     options.add_argument(f"user-data-dir={profile_path}")
     options.add_argument('profile-directory=Default')
-    options.add_argument("--log-level=3")   
-    driver = webdriver.Chrome( service=Service(ChromeDriverManager().install()), options=options)
-    #driver.get("file:///C:/Users/alaad/Downloads/uber/1vsdispatch.uber.com.html")
+    options.add_argument("--log-level=3")
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+    # driver.get("file:///C:/Users/alaad/Downloads/uber/1vsdispatch.uber.com.html")
     driver.get("https://vsdispatch.uber.com/")
+    print(driver.get_cookies())
     await asyncio.sleep(1)
     with open('Start.txt', 'w') as f:
         f.write(driver.print_page())
@@ -108,16 +110,18 @@ async def main():
         await asyncio.sleep(0.1)  # Polling-Intervall
         current_orders = driver.find_elements(By.CSS_SELECTOR, 'tr.MuiTableRow-root')
         if (len(current_orders)) == 0:
-                await asyncio.sleep(1)
-                with open('Error.txt', 'w') as f:
-                    f.write(driver.print_page())
-                driver.get("https://vsdispatch.uber.com/")
-                await asyncio.sleep(1)                
-                with open('Redirect.txt', 'w') as f:
-                    f.write(driver.print_page())
+            print("failed")
+            await asyncio.sleep(1)
+            with open('Error.txt', 'w') as f:
+                f.write(driver.print_page())
+            driver.get("https://vsdispatch.uber.com/")
+            await asyncio.sleep(1)
+            with open('Redirect.txt', 'w') as f:
+                f.write(driver.print_page())
         elif (len(current_orders)) != previous_order_count:
             for order in current_orders[previous_order_count:]:
                 asyncio.create_task(process_order(driver, order))
             previous_order_count = len(current_orders)
+
 
 asyncio.run(main())
